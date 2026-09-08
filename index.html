@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Smoking Simulator</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <div id="app">
+    <!-- Camera Feed -->
+    <video id="camera" autoplay playsinline muted></video>
+
+    <!-- Smoke Particle Canvas -->
+    <canvas id="smoke-canvas"></canvas>
+
+    <!-- Cigarette Model -->
+    <div id="cigarette">
+      <div class="cig-idle-smoke">
+        <div class="wisp wisp-1"></div>
+        <div class="wisp wisp-2"></div>
+        <div class="wisp wisp-3"></div>
+      </div>
+      <div class="cig-body">
+        <div class="cig-ember">
+          <div class="ember-core"></div>
+          <div class="ember-glow"></div>
+        </div>
+        <div class="cig-ash"></div>
+        <div class="cig-paper"></div>
+        <div class="cig-brand-ring"></div>
+        <div class="cig-filter"></div>
+      </div>
+    </div>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+      <div class="hud-panel hud-top-left">
+        <div class="hud-label">PUFFS</div>
+        <div class="hud-value" id="puff-count">0</div>
+      </div>
+      <div class="hud-panel hud-top-right">
+        <div class="hud-label">BURN</div>
+        <div class="burn-bar">
+          <div class="burn-fill" id="burn-progress"></div>
+        </div>
+      </div>
+      <div class="hud-panel hud-bottom" id="instructions">
+        <span class="instruction-icon">✌️</span>
+        <span>Pinch to hold</span>
+        <span class="instruction-sep">•</span>
+        <span class="instruction-icon">👄</span>
+        <span>Bring to mouth</span>
+        <span class="instruction-sep">•</span>
+        <span class="instruction-icon">😮</span>
+        <span>Open mouth to exhale</span>
+      </div>
+      <div class="hud-panel hud-status" id="status-indicator">
+        <div class="status-dot"></div>
+        <span id="status-text">Initializing...</span>
+      </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+      <div class="loader-container">
+        <div class="loader-ring"></div>
+        <div class="loader-icon">🚬</div>
+      </div>
+      <p class="loader-text">Loading camera & AI models...</p>
+      <p class="loader-subtext" id="loading-status">Starting up...</p>
+    </div>
+
+    <!-- New Cigarette Button (shown when burned out) -->
+    <button id="new-cig-btn" class="hidden">
+      🔥 Light Another
+    </button>
+  </div>
+
+  <!-- MediaPipe is loaded dynamically by app.js -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>

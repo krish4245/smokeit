@@ -1,0 +1,467 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+/* Base Styles */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #000;
+    font-family: 'Inter', sans-serif;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* App Container */
+#app {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Video Feed */
+#camera {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    z-index: 1;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* Smoke Overlay */
+#smoke-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+}
+
+/* Utility */
+.hidden {
+    display: none !important;
+}
+
+/* ----------------------------------------------------
+   CIGARETTE MODEL
+   ---------------------------------------------------- */
+#cigarette {
+    z-index: 3;
+    position: absolute;
+    transition: transform 0.08s ease-out;
+    pointer-events: none;
+    /* Center origin somewhat to hand point, adjust if needed */
+    transform-origin: right center;
+}
+
+.cig-body {
+    display: flex;
+    align-items: center;
+    height: 14px;
+    border-radius: 7px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 2px rgba(255,255,255,0.4);
+    position: relative;
+}
+
+/* Ember Tip */
+.cig-ember {
+    width: 8px;
+    height: 100%;
+    background: radial-gradient(circle at 30% 50%, #ff6600, #cc3300);
+    border-radius: 7px 0 0 7px;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.ember-core {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: #ffaa00;
+    border-radius: 50%;
+    box-shadow: 0 0 4px #ffdd44;
+    transition: background 0.3s, box-shadow 0.3s;
+}
+
+.ember-glow {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: transparent;
+    border-radius: 50%;
+    animation: ember-pulse 1.5s infinite alternate ease-in-out;
+    pointer-events: none;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+@keyframes ember-pulse {
+    0% {
+        box-shadow: 0 0 8px 2px rgba(255, 69, 0, 0.4), 0 0 15px rgba(255, 0, 0, 0.2);
+        opacity: 0.8;
+    }
+    100% {
+        box-shadow: 0 0 12px 4px rgba(255, 69, 0, 0.7), 0 0 25px rgba(255, 0, 0, 0.4);
+        opacity: 1;
+    }
+}
+
+/* Ash Segment */
+.cig-ash {
+    width: 12px;
+    height: 100%;
+    background: linear-gradient(to bottom, #888, #aaa, #999);
+    position: relative;
+}
+.cig-ash::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+        linear-gradient(45deg, transparent 40%, rgba(0,0,0,0.1) 45%, transparent 50%),
+        linear-gradient(-45deg, transparent 40%, rgba(0,0,0,0.1) 45%, transparent 50%);
+    background-size: 4px 4px;
+    mix-blend-mode: multiply;
+}
+
+/* Paper Body */
+.cig-paper {
+    flex: 1;
+    height: 100%;
+    min-width: 60px;
+    background: linear-gradient(to bottom, #f5f5f0, #ebe8e0);
+    position: relative;
+    box-shadow: inset 0 -3px 4px rgba(0,0,0,0.1), inset 0 2px 2px rgba(255,255,255,0.8);
+}
+.cig-paper::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        to right,
+        transparent,
+        transparent 10px,
+        rgba(0,0,0,0.02) 10px,
+        rgba(0,0,0,0.02) 11px
+    );
+}
+
+/* Brand Ring */
+.cig-brand-ring {
+    width: 12px;
+    height: 100%;
+    background: linear-gradient(to bottom, #d4af37, #f3e5ab, #aa8529);
+}
+
+/* Filter (held by user) */
+.cig-filter {
+    width: 28px;
+    height: 100%;
+    background: linear-gradient(to bottom, #d4a056, #c4903a);
+    border-radius: 0 7px 7px 0;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 -3px 4px rgba(0,0,0,0.2), inset 0 2px 2px rgba(255,255,255,0.3);
+}
+.cig-filter::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: radial-gradient(rgba(0,0,0,0.15) 1px, transparent 1px);
+    background-size: 3px 3px;
+}
+
+/* Inhaling State Changes */
+#cigarette.inhaling .ember-glow {
+    animation: ember-inhale 0.3s infinite alternate ease-in-out;
+}
+@keyframes ember-inhale {
+    0% {
+        box-shadow: 0 0 15px 5px rgba(255, 69, 0, 0.8), 0 0 30px rgba(255, 0, 0, 0.6);
+        opacity: 0.9;
+    }
+    100% {
+        box-shadow: 0 0 25px 8px rgba(255, 140, 0, 1), 0 0 45px rgba(255, 69, 0, 0.8);
+        opacity: 1;
+    }
+}
+#cigarette.inhaling .ember-core {
+    background: #ffdd44;
+    box-shadow: 0 0 8px #ffffff;
+}
+
+/* Idle Smoke Wisps */
+.cig-idle-smoke {
+    position: absolute;
+    left: -5px;
+    top: -15px;
+    width: 10px;
+    height: 20px;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+
+#cigarette.inhaling .cig-idle-smoke {
+    opacity: 0;
+}
+
+.wisp {
+    position: absolute;
+    width: 2px;
+    height: 20px;
+    background: linear-gradient(to top, transparent, rgba(200,200,200,0.3), transparent);
+    border-radius: 50%;
+    filter: blur(1px);
+}
+
+.wisp-1 {
+    left: 2px;
+    animation: wisp-rise 2s infinite ease-in;
+    animation-delay: 0s;
+}
+.wisp-2 {
+    left: 5px;
+    animation: wisp-rise 2.5s infinite ease-in;
+    animation-delay: 0.5s;
+}
+.wisp-3 {
+    left: 0px;
+    animation: wisp-rise 3s infinite ease-in;
+    animation-delay: 1s;
+}
+
+@keyframes wisp-rise {
+    0% {
+        transform: translateY(0) scaleX(1);
+        opacity: 0.4;
+    }
+    50% {
+        transform: translateY(-25px) scaleX(1.5) translateX(3px);
+        opacity: 0.2;
+    }
+    100% {
+        transform: translateY(-50px) scaleX(2);
+        opacity: 0;
+    }
+}
+
+
+/* ----------------------------------------------------
+   HUD OVERLAY
+   ---------------------------------------------------- */
+#hud {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.hud-panel {
+    background: rgba(0,0,0,0.25);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 12px 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.hud-top-left {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+}
+
+.hud-top-right {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+}
+
+.hud-bottom {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 300;
+}
+
+.hud-status {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.hud-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    opacity: 0.6;
+    margin-bottom: 4px;
+}
+
+.hud-value {
+    font-size: 32px;
+    font-weight: 700;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+
+.instruction-icon {
+    font-size: 16px;
+}
+
+.instruction-sep {
+    opacity: 0.3;
+}
+
+/* Burn Progress Bar */
+.burn-bar {
+    width: 120px;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+}
+
+.burn-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff4500, #ff8c00);
+    border-radius: 3px;
+    width: 100%; /* Managed by JS */
+    transition: width 0.5s ease;
+}
+
+/* Status Indicator Dot */
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #4ade80;
+    animation: status-blink 2s infinite ease-in-out;
+    box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
+}
+
+@keyframes status-blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+
+/* ----------------------------------------------------
+   LOADING SCREEN
+   ---------------------------------------------------- */
+#loading-screen {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(10px);
+    transition: opacity 0.5s ease;
+}
+
+#loading-screen.hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+
+.loader-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    margin-bottom: 24px;
+}
+
+.loader-ring {
+    position: absolute;
+    inset: 0;
+    border: 3px solid rgba(255,255,255,0.1);
+    border-top-color: #ff8c00;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+.loader-icon {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loader-text {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+}
+
+.loader-subtext {
+    font-size: 13px;
+    opacity: 0.5;
+}
+
+
+/* ----------------------------------------------------
+   NEW CIGARETTE BUTTON
+   ---------------------------------------------------- */
+#new-cig-btn {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 10;
+    background: linear-gradient(135deg, #ff4500, #ff8c00);
+    color: white;
+    border: none;
+    padding: 16px 32px;
+    border-radius: 50px;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    box-shadow: 0 4px 20px rgba(255,69,0,0.4);
+    transition: all 0.3s ease;
+    pointer-events: auto; /* Ensure clickable above canvas */
+}
+
+#new-cig-btn:hover {
+    transform: translateX(-50%) scale(1.05);
+    box-shadow: 0 6px 25px rgba(255,69,0,0.6);
+}
+
+#new-cig-btn.hidden {
+    display: none !important;
+}
