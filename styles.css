@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
 
 /* Base Styles */
 * {
@@ -14,6 +14,7 @@ body {
     font-family: 'Inter', sans-serif;
     color: #fff;
     -webkit-font-smoothing: antialiased;
+    user-select: none;
 }
 
 /* App Container */
@@ -53,23 +54,25 @@ body {
 }
 
 /* ----------------------------------------------------
-   CIGARETTE MODEL
+   DEVICE MODELS GENERAL
    ---------------------------------------------------- */
-#cigarette {
+.device-model, #cigarette {
     z-index: 3;
     position: absolute;
     transition: transform 0.08s ease-out;
     pointer-events: none;
-    /* Center origin somewhat to hand point, adjust if needed */
     transform-origin: right center;
 }
 
+/* ----------------------------------------------------
+   CIGARETTE MODEL
+   ---------------------------------------------------- */
 .cig-body {
     display: flex;
     align-items: center;
     height: 14px;
     border-radius: 7px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.4), inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 2px rgba(255,255,255,0.4);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5), inset 0 -2px 4px rgba(0,0,0,0.3), inset 0 2px 2px rgba(255,255,255,0.4);
     position: relative;
 }
 
@@ -204,7 +207,7 @@ body {
 }
 
 /* Idle Smoke Wisps */
-.cig-idle-smoke {
+.cig-idle-smoke, .vape-idle-smoke, .hookah-idle-smoke {
     position: absolute;
     left: -5px;
     top: -15px;
@@ -214,7 +217,7 @@ body {
     transition: opacity 0.3s ease;
 }
 
-#cigarette.inhaling .cig-idle-smoke {
+.inhaling .cig-idle-smoke, .inhaling .vape-idle-smoke, .inhaling .hookah-idle-smoke {
     opacity: 0;
 }
 
@@ -258,6 +261,122 @@ body {
     }
 }
 
+/* ----------------------------------------------------
+   VAPE MODEL
+   ---------------------------------------------------- */
+#vape {
+    width: 100px;
+    height: 24px;
+}
+
+.vape-body {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+
+.vape-tip {
+    width: 14px;
+    height: 10px;
+    background: linear-gradient(to bottom, #222, #111);
+    border-radius: 4px 0 0 4px;
+}
+
+.vape-tank {
+    width: 26px;
+    height: 18px;
+    background: linear-gradient(to bottom, rgba(0, 180, 216, 0.7), rgba(0, 119, 182, 0.9));
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    box-shadow: inset 0 0 6px rgba(255,255,255,0.4);
+}
+
+.vape-mod {
+    flex: 1;
+    height: 24px;
+    background: linear-gradient(to bottom, #2b2b36, #181820, #0d0d12);
+    border-radius: 0 6px 6px 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+    box-shadow: inset 0 2px 3px rgba(255,255,255,0.2), 0 4px 8px rgba(0,0,0,0.6);
+}
+
+.vape-led {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #00f0ff;
+    box-shadow: 0 0 8px #00f0ff;
+    transition: all 0.2s ease;
+}
+
+#vape.inhaling .vape-led {
+    background: #ff007f;
+    box-shadow: 0 0 16px #ff007f, 0 0 24px #ff007f;
+    animation: vape-glow 0.2s infinite alternate;
+}
+
+@keyframes vape-glow {
+    0% { transform: scale(1); opacity: 0.8; }
+    100% { transform: scale(1.4); opacity: 1; }
+}
+
+/* ----------------------------------------------------
+   HOOKAH MODEL
+   ---------------------------------------------------- */
+#hookah {
+    width: 110px;
+    height: 20px;
+}
+
+.hookah-body {
+    display: flex;
+    align-items: center;
+    height: 100%;
+    width: 100%;
+    position: relative;
+}
+
+.hookah-tip {
+    width: 16px;
+    height: 8px;
+    background: linear-gradient(to bottom, #e6c687, #b89753);
+    border-radius: 5px 0 0 5px;
+    box-shadow: inset 0 1px 2px rgba(255,255,255,0.5);
+}
+
+.hookah-neck {
+    width: 12px;
+    height: 14px;
+    background: linear-gradient(to bottom, #d4af37, #aa8529);
+    border-radius: 2px;
+}
+
+.hookah-grip {
+    width: 35px;
+    height: 20px;
+    background: radial-gradient(circle at 50% 50%, #8b0000, #4a0000);
+    border-radius: 4px;
+    border: 1px solid #d4af37;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.8);
+}
+
+.hookah-hose {
+    flex: 1;
+    height: 12px;
+    background: repeating-linear-gradient(
+        90deg,
+        #111,
+        #111 4px,
+        #b89753 4px,
+        #b89753 6px
+    );
+    border-radius: 0 6px 6px 0;
+}
 
 /* ----------------------------------------------------
    HUD OVERLAY
@@ -270,13 +389,13 @@ body {
 }
 
 .hud-panel {
-    background: rgba(0,0,0,0.25);
+    background: rgba(0,0,0,0.35);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.12);
     border-radius: 16px;
     padding: 12px 20px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
 .hud-top-left {
@@ -293,7 +412,7 @@ body {
 
 .hud-bottom {
     position: fixed;
-    bottom: 30px;
+    bottom: 25px;
     left: 50%;
     transform: translateX(-50%);
     display: flex;
@@ -351,7 +470,7 @@ body {
     height: 100%;
     background: linear-gradient(90deg, #ff4500, #ff8c00);
     border-radius: 3px;
-    width: 100%; /* Managed by JS */
+    width: 100%;
     transition: width 0.5s ease;
 }
 
@@ -370,6 +489,175 @@ body {
     50% { opacity: 0.3; }
 }
 
+/* ----------------------------------------------------
+   DEVICE SELECTOR & COLOR PICKER & RING TOGGLE
+   ---------------------------------------------------- */
+#device-selector {
+    position: fixed;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.selector-device {
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: rgba(255,255,255,0.7);
+}
+
+.selector-device:hover {
+    background: rgba(255,255,255,0.15);
+    transform: scale(1.05);
+    color: #fff;
+}
+
+.selector-device.active {
+    background: linear-gradient(135deg, rgba(255, 140, 0, 0.4), rgba(255, 69, 0, 0.5));
+    border-color: rgba(255, 140, 0, 0.8);
+    color: #fff;
+    box-shadow: 0 4px 15px rgba(255, 69, 0, 0.3);
+}
+
+.selector-icon {
+    font-size: 20px;
+}
+
+.selector-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+/* Color Picker */
+#color-picker {
+    position: fixed;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 20;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 16px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.color-label {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    opacity: 0.6;
+}
+
+.color-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.color-dot {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+
+.color-dot:hover {
+    transform: scale(1.2);
+}
+
+.color-dot.active {
+    border-color: #ffffff;
+    transform: scale(1.25);
+    box-shadow: 0 0 12px rgba(255,255,255,0.8);
+}
+
+/* Ring Toggle Switch */
+#ring-toggle {
+    position: fixed;
+    bottom: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 20;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: auto;
+    padding: 8px 16px;
+    border-radius: 30px;
+}
+
+.ring-icon {
+    font-size: 16px;
+}
+
+.ring-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.toggle-switch {
+    position: relative;
+    width: 38px;
+    height: 20px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: rgba(255,255,255,0.2);
+    transition: 0.3s;
+    border-radius: 20px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 14px;
+    width: 14px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+input:checked + .toggle-slider {
+    background: linear-gradient(135deg, #00f0ff, #7b2ff7);
+}
+
+input:checked + .toggle-slider:before {
+    transform: translateX(18px);
+}
 
 /* ----------------------------------------------------
    LOADING SCREEN
@@ -377,7 +665,7 @@ body {
 #loading-screen {
     position: fixed;
     inset: 0;
-    background: rgba(0,0,0,0.9);
+    background: rgba(0,0,0,0.92);
     z-index: 100;
     display: flex;
     flex-direction: column;
@@ -433,28 +721,27 @@ body {
     opacity: 0.5;
 }
 
-
 /* ----------------------------------------------------
    NEW CIGARETTE BUTTON
    ---------------------------------------------------- */
 #new-cig-btn {
     position: fixed;
-    bottom: 100px;
+    bottom: 130px;
     left: 50%;
     transform: translateX(-50%);
-    z-index: 10;
+    z-index: 25;
     background: linear-gradient(135deg, #ff4500, #ff8c00);
     color: white;
     border: none;
-    padding: 16px 32px;
+    padding: 14px 28px;
     border-radius: 50px;
-    font-size: 18px;
+    font-size: 16px;
     font-weight: 600;
     cursor: pointer;
     font-family: 'Inter', sans-serif;
     box-shadow: 0 4px 20px rgba(255,69,0,0.4);
     transition: all 0.3s ease;
-    pointer-events: auto; /* Ensure clickable above canvas */
+    pointer-events: auto;
 }
 
 #new-cig-btn:hover {

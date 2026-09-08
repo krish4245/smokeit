@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Smoking Simulator</title>
+  <title>Smoke It — Smoking Simulator</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet" />
 </head>
 <body>
   <div id="app">
@@ -18,7 +18,7 @@
     <canvas id="smoke-canvas"></canvas>
 
     <!-- Cigarette Model -->
-    <div id="cigarette">
+    <div id="cigarette" class="device-cigarette">
       <div class="cig-idle-smoke">
         <div class="wisp wisp-1"></div>
         <div class="wisp wisp-2"></div>
@@ -36,6 +36,37 @@
       </div>
     </div>
 
+    <!-- Vape Model -->
+    <div id="vape" class="device-model" style="display:none;">
+      <div class="vape-idle-smoke">
+        <div class="wisp wisp-1"></div>
+        <div class="wisp wisp-2"></div>
+      </div>
+      <div class="vape-body">
+        <div class="vape-tip"></div>
+        <div class="vape-tank"></div>
+        <div class="vape-mod">
+          <div class="vape-led"></div>
+        </div>
+        <div class="vape-button"></div>
+      </div>
+    </div>
+
+    <!-- Hookah Model -->
+    <div id="hookah" class="device-model" style="display:none;">
+      <div class="hookah-idle-smoke">
+        <div class="wisp wisp-1"></div>
+        <div class="wisp wisp-2"></div>
+        <div class="wisp wisp-3"></div>
+      </div>
+      <div class="hookah-body">
+        <div class="hookah-tip"></div>
+        <div class="hookah-neck"></div>
+        <div class="hookah-grip"></div>
+        <div class="hookah-hose"></div>
+      </div>
+    </div>
+
     <!-- HUD Overlay -->
     <div id="hud">
       <div class="hud-panel hud-top-left">
@@ -48,20 +79,62 @@
           <div class="burn-fill" id="burn-progress"></div>
         </div>
       </div>
-      <div class="hud-panel hud-bottom" id="instructions">
-        <span class="instruction-icon">✌️</span>
-        <span>Pinch to hold</span>
-        <span class="instruction-sep">•</span>
-        <span class="instruction-icon">👄</span>
-        <span>Bring to mouth</span>
-        <span class="instruction-sep">•</span>
-        <span class="instruction-icon">😮</span>
-        <span>Open mouth to exhale</span>
-      </div>
       <div class="hud-panel hud-status" id="status-indicator">
         <div class="status-dot"></div>
         <span id="status-text">Initializing...</span>
       </div>
+    </div>
+
+    <!-- Device Selector -->
+    <div id="device-selector">
+      <div class="selector-device active" data-device="cigarette">
+        <div class="selector-icon">🚬</div>
+        <div class="selector-label">Cigarette</div>
+      </div>
+      <div class="selector-device" data-device="vape">
+        <div class="selector-icon">💨</div>
+        <div class="selector-label">Vape</div>
+      </div>
+      <div class="selector-device" data-device="hookah">
+        <div class="selector-icon">🫧</div>
+        <div class="selector-label">Hookah</div>
+      </div>
+    </div>
+
+    <!-- Smoke Color Picker -->
+    <div id="color-picker">
+      <div class="color-label">SMOKE</div>
+      <div class="color-options">
+        <div class="color-dot active" data-color="classic" style="background: linear-gradient(135deg, #ccc, #999);" title="Classic"></div>
+        <div class="color-dot" data-color="ice" style="background: linear-gradient(135deg, #88d8f9, #3ba3d9);" title="Ice Blue"></div>
+        <div class="color-dot" data-color="grape" style="background: linear-gradient(135deg, #c77dff, #7b2ff7);" title="Grape"></div>
+        <div class="color-dot" data-color="mint" style="background: linear-gradient(135deg, #6feca3, #2dd881);" title="Mint"></div>
+        <div class="color-dot" data-color="sunset" style="background: linear-gradient(135deg, #ff6b6b, #ffa651);" title="Sunset"></div>
+        <div class="color-dot" data-color="rose" style="background: linear-gradient(135deg, #ff7eb3, #ff3d8b);" title="Rose"></div>
+        <div class="color-dot" data-color="lemon" style="background: linear-gradient(135deg, #fff176, #fbc02d);" title="Lemon"></div>
+      </div>
+    </div>
+
+    <!-- Ring Mode Toggle -->
+    <div id="ring-toggle" class="hud-panel">
+      <span class="ring-icon">🫧</span>
+      <span class="ring-label">Rings</span>
+      <div class="toggle-switch">
+        <input type="checkbox" id="ring-mode-check" />
+        <label for="ring-mode-check" class="toggle-slider"></label>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="hud-panel hud-bottom" id="instructions">
+      <span class="instruction-icon">✌️</span>
+      <span>Pinch to hold</span>
+      <span class="instruction-sep">•</span>
+      <span class="instruction-icon">👄</span>
+      <span>Bring to mouth</span>
+      <span class="instruction-sep">•</span>
+      <span class="instruction-icon">😮</span>
+      <span>Open mouth to exhale</span>
     </div>
 
     <!-- Loading Screen -->
@@ -74,13 +147,13 @@
       <p class="loader-subtext" id="loading-status">Starting up...</p>
     </div>
 
-    <!-- New Cigarette Button (shown when burned out) -->
+    <!-- New Cigarette Button -->
     <button id="new-cig-btn" class="hidden">
       🔥 Light Another
     </button>
   </div>
 
-  <!-- MediaPipe is loaded dynamically by app.js -->
+  <!-- MediaPipe loaded dynamically by app.js -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
