@@ -1,7 +1,7 @@
 // ============================================================
 // 🚬 Smoke It — Main Application Logic
 // ============================================================
-// Camera + MediaPipe Tracking + Custom Smoke Engine (Rings, Colors & Devices)
+// Camera + MediaPipe Tracking + Sound Effects + High-Performance Engine
 // ============================================================
 
 let video, handLandmarker, faceLandmarker;
@@ -30,27 +30,162 @@ let currentDevice = 'cigarette'; // 'cigarette', 'vape', 'hookah'
 let currentSmokeColor = 'classic'; // 'classic', 'ice', 'grape', 'mint', 'sunset', 'rose', 'lemon'
 let ringModeEnabled = false;
 
-const INHALE_FRAMES_REQUIRED = 25; // ~0.4s
-const EXHALE_DURATION = 90; // ~1.5s
+const INHALE_FRAMES_REQUIRED = 20; // ~0.3s
+const EXHALE_DURATION = 80; // ~1.3s
 
 // Color palettes for smoke
 const SMOKE_PALETTES = {
-  classic: { r: 200, g: 200, b: 210, name: 'Classic' },
-  ice:     { r: 100, g: 200, b: 255, name: 'Ice Blue' },
-  grape:   { r: 180, g: 100, b: 255, name: 'Grape' },
-  mint:    { r: 100, g: 240, b: 160, name: 'Mint' },
-  sunset:  { r: 255, g: 140, b: 80,  name: 'Sunset' },
-  rose:    { r: 255, g: 120, b: 180, name: 'Rose' },
-  lemon:   { r: 255, g: 240, b: 100, name: 'Lemon' }
+  classic: { r: 210, g: 210, b: 220, name: 'Classic' },
+  ice:     { r: 90,  g: 210, b: 255, name: 'Ice Blue' },
+  grape:   { r: 190, g: 110, b: 255, name: 'Grape' },
+  mint:    { r: 100, g: 245, b: 170, name: 'Mint' },
+  sunset:  { r: 255, g: 150, b: 90,  name: 'Sunset' },
+  rose:    { r: 255, g: 130, b: 190, name: 'Rose' },
+  lemon:   { r: 255, g: 245, b: 110, name: 'Lemon' }
 };
 
 // Device positioning lerp
 let deviceX = 0, deviceY = 0;
-const LERP_SPEED = 0.25;
+const LERP_SPEED = 0.28;
 
-// Smoke Particles
+// Optimized Smoke Particles
 let particles = [];
-const MAX_PARTICLES = 400;
+const MAX_PARTICLES = 160; // Optimized limit for smooth 60fps
+
+// ============================================================
+// WEB AUDIO SOUND EFFECTS GENERATOR (Zero Assets Needed!)
+// ============================================================
+let audioCtx = null;
+
+function initAudio() {
+  if (!audioCtx) {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (AudioContext) {
+      audioCtx = new AudioContext();
+    }
+  }
+  if (audioCtx && audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+}
+
+// Inhale Crackle/Sizzle Sound
+let inhaleBufferNode = null;
+let inhaleGainNode = null;
+
+function startInhaleSound() {
+  initAudio();
+  if (!audioCtx) return;
+
+  try {
+    stopInhaleSound();
+
+    const bufferSize = audioCtx.sampleRate * 2; // 2 seconds
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      // Crackling noise for ember burn / vape sizzle
+      const white = Math.random() * 2 - 1;
+      const crackle = Math.random() < 0.08 ? (Math.random() - 0.5) * 3 : 0;
+      data[i] = white * 0.15 + crackle * 0.4;
+    }
+
+    inhaleBufferNode = audioCtx.createBufferSource();
+    inhaleBufferNode.buffer = buffer;
+    inhaleBufferNode.loop = true;
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(currentDevice === 'vape' ? 2400 : 1600, audioCtx.currentTime);
+    filter.Q.setValueAtTime(1.5, audioCtx.currentTime);
+
+    inhaleGainNode = audioCtx.createGain();
+    inhaleGainNode.gain.setValueAtTime(0.01, audioCtx.currentTime);
+    inhaleGainNode.gain.linearRampToValueAtTime(0.18, audioCtx.currentTime + 0.2);
+
+    inhaleBufferNode.connect(filter);
+    filter.connect(inhaleGainNode);
+    inhaleGainNode.connect(audioCtx.destination);
+
+    inhaleBufferNode.start();
+  } catch (e) {
+    console.warn('Inhale sound error:', e);
+  }
+}
+
+function stopInhaleSound() {
+  if (inhaleGainNode && audioCtx) {
+    try {
+      inhaleGainNode.gain.linearRampToValueAtTime(0.001, audioCtx.currentTime + 0.1);
+      setTimeout(() => {
+        if (inhaleBufferNode) {
+          inhaleBufferNode.stop();
+          inhaleBufferNode.disconnect();
+          inhaleBufferNode = null;
+        }
+      }, 120);
+    } catch (e) {}
+  }
+}
+
+// Exhale Air Whoosh Sound
+function playExhaleSound() {
+  initAudio();
+  if (!audioCtx) return;
+
+  try {
+    const duration = 1.2;
+    const bufferSize = audioCtx.sampleRate * duration;
+    const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = audioCtx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = audioCtx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(400, audioCtx.currentTime);
+    filter.frequency.exponentialRampToValueAtTime(120, audioCtx.currentTime + duration);
+
+    const gain = audioCtx.createGain();
+    gain.gain.setValueAtTime(0.01, audioCtx.currentTime);
+    gain.gain.linearRampToValueAtTime(currentDevice === 'vape' ? 0.35 : 0.22, audioCtx.currentTime + 0.2);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    noise.start();
+  } catch (e) {}
+}
+
+// Ring Spawn Pop Sound
+function playRingPopSound() {
+  initAudio();
+  if (!audioCtx) return;
+
+  try {
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(180, audioCtx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(60, audioCtx.currentTime + 0.15);
+
+    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    osc.start();
+    osc.stop(audioCtx.currentTime + 0.15);
+  } catch (e) {}
+}
 
 function updateLoadingStatus(msg) {
   console.log('[SmokeSim]', msg);
@@ -164,7 +299,7 @@ function resetCigarette() {
   state = 'idle';
 }
 
-// State Machine
+// State Machine with Audio Triggers
 function updateState() {
   const currentDeviceEl = getActiveDeviceElement();
 
@@ -174,6 +309,7 @@ function updateState() {
   );
   const isNearMouth = handToMouth < 0.13;
 
+  const prevState = state;
   currentDeviceEl.classList.remove('idle', 'holding', 'inhaling', 'exhaling');
 
   switch (state) {
@@ -190,22 +326,23 @@ function updateState() {
       break;
 
     case 'inhaling':
-      if (!isPinching) { state = 'idle'; inhaleTimer = 0; break; }
+      if (!isPinching) {
+        state = 'idle';
+        inhaleTimer = 0;
+        stopInhaleSound();
+        break;
+      }
       if (!isNearMouth) {
         if (inhaleTimer >= INHALE_FRAMES_REQUIRED) {
           state = 'exhaling';
           exhaleTimer = 0;
           puffCount++;
-          if (currentDevice === 'cigarette') {
-            burnLevel = Math.max(0, burnLevel - 8);
-            document.getElementById('burn-progress').style.width = burnLevel + '%';
-            if (burnLevel <= 0) handleBurnedOut();
-          }
-          document.getElementById('puff-count').textContent = puffCount;
+          triggerPuffEffects();
         } else {
           state = 'holding';
         }
         inhaleTimer = 0;
+        stopInhaleSound();
         break;
       }
       inhaleTimer++;
@@ -214,12 +351,8 @@ function updateState() {
         state = 'exhaling';
         exhaleTimer = 0;
         puffCount++;
-        if (currentDevice === 'cigarette') {
-          burnLevel = Math.max(0, burnLevel - 8);
-          document.getElementById('burn-progress').style.width = burnLevel + '%';
-          if (burnLevel <= 0) handleBurnedOut();
-        }
-        document.getElementById('puff-count').textContent = puffCount;
+        triggerPuffEffects();
+        stopInhaleSound();
       }
       break;
 
@@ -231,7 +364,27 @@ function updateState() {
       break;
   }
 
+  // Handle Sound Effects Triggers
+  if (prevState !== 'inhaling' && state === 'inhaling') {
+    startInhaleSound();
+  } else if (prevState === 'inhaling' && state !== 'inhaling') {
+    stopInhaleSound();
+  }
+
+  if (prevState !== 'exhaling' && state === 'exhaling') {
+    playExhaleSound();
+  }
+
   currentDeviceEl.classList.add(state);
+}
+
+function triggerPuffEffects() {
+  if (currentDevice === 'cigarette') {
+    burnLevel = Math.max(0, burnLevel - 8);
+    document.getElementById('burn-progress').style.width = burnLevel + '%';
+    if (burnLevel <= 0) handleBurnedOut();
+  }
+  document.getElementById('puff-count').textContent = puffCount;
 }
 
 function getActiveDeviceElement() {
@@ -271,7 +424,7 @@ function updateDevicePosition() {
 }
 
 // ============================================================
-// ENHANCED SMOKE ENGINE (Clouds + Smoke Rings)
+// HIGH-PERFORMANCE SMOKE ENGINE (Rings + Clouds)
 // ============================================================
 class SmokeParticle {
   constructor(x, y, type = 'exhale', isRing = false) {
@@ -285,39 +438,39 @@ class SmokeParticle {
 
     if (this.isRing) {
       // Ring particle properties
-      this.vx = (Math.random() - 0.5) * 0.5;
-      this.vy = -(Math.random() * 2.5 + 2.0); // Moves up fast
-      this.radius = 8;
-      this.maxRadius = 50 + Math.random() * 25; // Expands into large ring
-      this.ringThickness = 6 + Math.random() * 4;
-      this.opacity = 0.7 + Math.random() * 0.2;
+      this.vx = (Math.random() - 0.5) * 0.4;
+      this.vy = -(Math.random() * 2.2 + 2.0); // Fast upward stream
+      this.radius = 12;
+      this.maxRadius = 55 + Math.random() * 20; // Ring expansion
+      this.ringThickness = 5 + Math.random() * 3;
+      this.opacity = 0.85;
       this.life = 0;
-      this.maxLife = 140 + Math.random() * 40;
+      this.maxLife = 90 + Math.random() * 20; // Optimized shorter life
       this.growRate = (this.maxRadius - this.radius) / this.maxLife;
     } else if (type === 'exhale') {
-      // Regular Exhale Smoke Cloud
-      const deviceMult = currentDevice === 'vape' ? 1.8 : currentDevice === 'hookah' ? 1.4 : 1.0;
-      this.vx = (Math.random() - 0.5) * (2.5 * deviceMult);
-      this.vy = -(Math.random() * 2.2 + 1.2);
-      this.radius = (4 + Math.random() * 6) * deviceMult;
-      this.maxRadius = (30 + Math.random() * 25) * deviceMult;
-      this.opacity = (0.45 + Math.random() * 0.25) * (currentDevice === 'vape' ? 1.3 : 1.0);
+      // Cloud particle properties
+      const deviceMult = currentDevice === 'vape' ? 1.5 : currentDevice === 'hookah' ? 1.3 : 1.0;
+      this.vx = (Math.random() - 0.5) * (2.2 * deviceMult);
+      this.vy = -(Math.random() * 1.8 + 1.0);
+      this.radius = (5 + Math.random() * 5) * deviceMult;
+      this.maxRadius = (28 + Math.random() * 20) * deviceMult;
+      this.opacity = 0.5 * (currentDevice === 'vape' ? 1.2 : 1.0);
       this.life = 0;
-      this.maxLife = 130 + Math.random() * 50;
+      this.maxLife = 85 + Math.random() * 25; // Faster decay = zero lag!
       this.turbulenceOffset = Math.random() * Math.PI * 2;
-      this.turbulenceSpeed = 0.02 + Math.random() * 0.02;
+      this.turbulenceSpeed = 0.03;
       this.growRate = (this.maxRadius - this.radius) / this.maxLife;
     } else {
-      // Idle smoke
-      this.vx = (Math.random() - 0.3) * 0.4;
-      this.vy = -(Math.random() * 0.8 + 0.3);
-      this.radius = 1.5 + Math.random() * 2;
-      this.maxRadius = 8 + Math.random() * 5;
-      this.opacity = 0.2 + Math.random() * 0.1;
+      // Idle smoke from tip
+      this.vx = (Math.random() - 0.3) * 0.3;
+      this.vy = -(Math.random() * 0.7 + 0.3);
+      this.radius = 1.5;
+      this.maxRadius = 7;
+      this.opacity = 0.25;
       this.life = 0;
-      this.maxLife = 60 + Math.random() * 40;
+      this.maxLife = 45;
       this.turbulenceOffset = Math.random() * Math.PI * 2;
-      this.turbulenceSpeed = 0.03 + Math.random() * 0.02;
+      this.turbulenceSpeed = 0.04;
       this.growRate = (this.maxRadius - this.radius) / this.maxLife;
     }
   }
@@ -327,19 +480,19 @@ class SmokeParticle {
     const progress = this.life / this.maxLife;
 
     if (!this.isRing) {
-      this.vx += Math.sin(this.life * this.turbulenceSpeed + this.turbulenceOffset) * 0.08;
+      this.vx += Math.sin(this.life * this.turbulenceSpeed + this.turbulenceOffset) * 0.07;
     }
 
-    this.vx *= 0.99;
-    this.vy *= 0.992;
+    this.vx *= 0.985;
+    this.vy *= 0.99;
 
     this.x += this.vx;
     this.y += this.vy;
 
     this.radius += this.growRate;
 
-    if (progress > 0.35) {
-      this.opacity *= 0.975;
+    if (progress > 0.3) {
+      this.opacity *= 0.96;
     }
 
     return this.life < this.maxLife && this.opacity > 0.01;
@@ -350,29 +503,25 @@ function updateSmokeParticles() {
   const canvas = document.getElementById('smoke-canvas');
 
   // Spawn Exhale Smoke
-  if (state === 'exhaling' && exhaleTimer < EXHALE_DURATION * 0.75) {
+  if (state === 'exhaling' && exhaleTimer < EXHALE_DURATION * 0.7) {
     const mx = mouthPosition.x * canvas.width;
     const my = mouthPosition.y * canvas.height;
 
     if (ringModeEnabled) {
-      // Spawn Smoke Rings periodically (every 18 frames)
-      if (exhaleTimer % 18 === 1 && particles.length < MAX_PARTICLES) {
-        particles.push(new SmokeParticle(
-          mx,
-          my - 10,
-          'exhale',
-          true // isRing
-        ));
+      // Spawn Smoke Ring every 20 frames
+      if (exhaleTimer % 20 === 1 && particles.length < MAX_PARTICLES) {
+        particles.push(new SmokeParticle(mx, my - 10, 'exhale', true));
+        playRingPopSound(); // Ring sound trigger
       }
     } else {
-      // Regular Cloud Exhale
-      const mult = currentDevice === 'vape' ? 2.0 : 1.0;
-      const spawnCount = Math.floor((exhaleTimer < 15 ? 12 : Math.max(1, 8 - Math.floor(exhaleTimer / 15))) * mult);
+      // Optimized Cloud Exhale
+      const mult = currentDevice === 'vape' ? 1.5 : 1.0;
+      const spawnCount = Math.floor((exhaleTimer < 12 ? 5 : Math.max(1, 4 - Math.floor(exhaleTimer / 18))) * mult);
 
       for (let i = 0; i < spawnCount && particles.length < MAX_PARTICLES; i++) {
         particles.push(new SmokeParticle(
-          mx + (Math.random() - 0.5) * 20,
-          my + (Math.random() - 0.5) * 12,
+          mx + (Math.random() - 0.5) * 16,
+          my + (Math.random() - 0.5) * 10,
           'exhale',
           false
         ));
@@ -380,8 +529,8 @@ function updateSmokeParticles() {
     }
   }
 
-  // Spawn Idle smoke from tip
-  if (state !== 'inhaling' && Math.random() < 0.2) {
+  // Spawn Idle smoke
+  if (state !== 'inhaling' && Math.random() < 0.25) {
     const scaleX = canvas.width / window.innerWidth;
     const scaleY = canvas.height / window.innerHeight;
     const tipX = deviceX + 4;
@@ -404,75 +553,69 @@ function renderSmoke() {
   const canvas = document.getElementById('smoke-canvas');
   const ctx = canvas.getContext('2d');
 
-  ctx.globalCompositeOperation = 'destination-out';
-  ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  // Fast clear
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  ctx.globalCompositeOperation = 'source-over';
-
-  for (const p of particles) {
+  for (let i = 0; i < particles.length; i++) {
+    const p = particles[i];
     ctx.save();
     ctx.globalAlpha = Math.min(1, p.opacity);
 
     const { r, g, b } = p.color;
 
     if (p.isRing) {
-      // Render Toroidal Smoke Ring
+      // High Performance Ring Rendering
       ctx.lineWidth = p.ringThickness;
-      const ringGrad = ctx.createRadialGradient(p.x, p.y, p.radius - p.ringThickness, p.x, p.y, p.radius + p.ringThickness);
-      ringGrad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0)`);
-      ringGrad.addColorStop(0.5, `rgba(${r}, ${g}, ${b}, 0.8)`);
-      ringGrad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
-
-      ctx.strokeStyle = ringGrad;
+      ctx.strokeStyle = `rgba(${r}, ${g}, ${b}, ${p.opacity * 0.9})`;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.arc(p.x | 0, p.y | 0, p.radius | 0, 0, Math.PI * 2);
       ctx.stroke();
 
-      // Soft inner glow for ring
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.15)`;
+      // Soft center halo
+      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${p.opacity * 0.12})`;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius * 0.8, 0, Math.PI * 2);
+      ctx.arc(p.x | 0, p.y | 0, (p.radius * 0.85) | 0, 0, Math.PI * 2);
       ctx.fill();
     } else {
-      // Render Volumetric Particle Cloud
-      const grad = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.radius);
-      if (p.type === 'exhale') {
-        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.65)`);
-        grad.addColorStop(0.5, `rgba(${r - 20}, ${g - 20}, ${b - 15}, 0.35)`);
-        grad.addColorStop(1, `rgba(${r - 30}, ${g - 30}, ${b - 25}, 0)`);
-      } else {
-        grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.4)`);
-        grad.addColorStop(1, `rgba(${r - 20}, ${g - 20}, ${b - 20}, 0)`);
-      }
+      // High Performance Particle Cloud
+      const grad = ctx.createRadialGradient(p.x | 0, p.y | 0, 0, p.x | 0, p.y | 0, p.radius | 0);
+      grad.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.6)`);
+      grad.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`);
 
       ctx.fillStyle = grad;
       ctx.beginPath();
-      ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+      ctx.arc(p.x | 0, p.y | 0, p.radius | 0, 0, Math.PI * 2);
       ctx.fill();
     }
     ctx.restore();
   }
 }
 
-// Detection Loop
+// Detection Loop with Frame Throttling
+let isProcessingFrame = false;
+
 function detect() {
   const now = performance.now();
   if (now === lastTimestamp) { requestAnimationFrame(detect); return; }
   lastTimestamp = now;
 
-  try {
-    if (handLandmarker && video) {
-      const handResults = handLandmarker.detectForVideo(video, now);
-      processHands(handResults);
+  // Run MediaPipe inference non-blocking
+  if (!isProcessingFrame) {
+    isProcessingFrame = true;
+    try {
+      if (handLandmarker && video && video.readyState >= 2) {
+        const handResults = handLandmarker.detectForVideo(video, now);
+        processHands(handResults);
+      }
+      if (faceLandmarker && video && video.readyState >= 2) {
+        const faceResults = faceLandmarker.detectForVideo(video, now);
+        processFace(faceResults);
+      }
+    } catch (e) {
+      console.warn('Detection skipped:', e.message);
+    } finally {
+      isProcessingFrame = false;
     }
-
-    if (faceLandmarker && video) {
-      const faceResults = faceLandmarker.detectForVideo(video, now);
-      processFace(faceResults);
-    }
-  } catch (e) {
-    console.warn('Detection frame skipped:', e.message);
   }
 
   updateState();
@@ -497,29 +640,32 @@ function getDeviceEmoji() {
   return '🚬';
 }
 
-// UI Event Listeners setup
+// UI Event Listeners
 function setupUIListeners() {
-  // Device Selection
+  document.addEventListener('click', initAudio, { once: true });
+  document.addEventListener('touchstart', initAudio, { once: true });
+
   document.querySelectorAll('.selector-device').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
+      initAudio();
       const device = btn.getAttribute('data-device');
       switchDevice(device);
     });
   });
 
-  // Color Selection
   document.querySelectorAll('.color-dot').forEach(dot => {
     dot.addEventListener('click', () => {
+      initAudio();
       document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
       dot.classList.add('active');
       currentSmokeColor = dot.getAttribute('data-color');
     });
   });
 
-  // Ring Mode Toggle
   const ringCheck = document.getElementById('ring-mode-check');
   if (ringCheck) {
     ringCheck.addEventListener('change', (e) => {
+      initAudio();
       ringModeEnabled = e.target.checked;
     });
   }
@@ -536,7 +682,6 @@ function switchDevice(device) {
   document.getElementById('vape').style.display = device === 'vape' ? 'block' : 'none';
   document.getElementById('hookah').style.display = device === 'hookah' ? 'block' : 'none';
 
-  // Hide burn bar for vape/hookah, show for cigarette
   const burnBarContainer = document.querySelector('.hud-top-right');
   if (burnBarContainer) {
     burnBarContainer.style.display = device === 'cigarette' ? 'block' : 'none';
@@ -556,9 +701,7 @@ async function init() {
       FilesetResolver = vision.FilesetResolver;
       HandLandmarker = vision.HandLandmarker;
       FaceLandmarker = vision.FaceLandmarker;
-      console.log('[SmokeSim] MediaPipe loaded via jsDelivr +esm');
     } catch (importErr) {
-      console.warn('[SmokeSim] +esm import failed, trying bundle fallback...', importErr);
       const vision = await import(
         'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs'
       );
